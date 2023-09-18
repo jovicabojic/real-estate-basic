@@ -84,8 +84,27 @@ export default {
       });
     },
     createPopupContent(publication) {
-      return `<div>${publication.publicationTitle}</div>`;
+      const formattedDescription = publication.description
+          .split('/n') // Split the description into paragraphs using '/n'
+          .map((paragraph) => `<p>${paragraph}</p>`) // Wrap each paragraph in <p> tags
+          .join(''); // Join the paragraphs back together
+
+      return `
+    <div>
+      ${publication.publicationTitle}<br>
+      ${this.formatPrice(publication.price)}€<br>
+      ${formattedDescription}
+    </div>
+  `;
     },
+
+    formatPrice(value) {
+      let val = (value/1).toFixed(2).replace('.', ',')
+      return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+    }
   }
 };
 </script>
+
+<style>
+</style>
