@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <l-map ref="map" style="height: 800px; width: 1000px; margin: 0 auto;" :zoom="zoom" :center="center">
+    <l-map ref="map" style="height: 600px; width: 1000px; margin: 0 auto;" :zoom="zoom" :center="center">
       <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
       <!-- l-popup will be handled in the JavaScript part -->
     </l-map>
@@ -13,6 +13,7 @@ import {LMap, LTileLayer} from 'vue2-leaflet';
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import LocationPin from "@/assets/location.png";
+import PlaceholderImage from "@/assets/placeholder.jpg";
 
 export default {
   name: 'App',
@@ -69,7 +70,7 @@ export default {
         // Bind popup on mouseover
         marker.bindPopup(this.createPopupContent(publication), {
           keepInView: true,
-          maxHeight: 300,
+          maxHeight: 400,
           offset: [0, -10],
         });
 
@@ -84,22 +85,28 @@ export default {
       });
     },
     createPopupContent(publication) {
-      const formattedDescription = publication.description
-          .split('/n') // Split the description into paragraphs using '/n'
-          .map((paragraph) => `<p>${paragraph}</p>`) // Wrap each paragraph in <p> tags
-          .join(''); // Join the paragraphs back together
+      const maxDescriptionLength = 100;
+      const truncatedDescription = publication.description.length > maxDescriptionLength
+          ? `${publication.description.slice(0, maxDescriptionLength)}...`
+          : publication.description;
 
-      return `
-    <div>
-      ${publication.publicationTitle}<br>
-      ${this.formatPrice(publication.price)}€<br>
-      ${formattedDescription}
-    </div>
-  `;
-    },
+      // Check if there are pictures in the publication, and use the first one if available
+      const imageUrl = publication.pictures.length > 0 ? publication.pictures[0].Url : PlaceholderImage;
 
+      return `<div class="custom-popup">
+                <div class="popup-ribbon">
+                    ${publication.propertyCategory}
+                </div>
+                <img src="${imageUrl}" alt="" />
+                <div class="popup-content">
+                    <h3>${publication.publicationTitle}</h3>
+                    <p>${truncatedDescription}</p>
+                    <h2>${this.formatPrice(publication.price)}€</h2>
+                </div>
+               </div>`;
+      },
     formatPrice(value) {
-      let val = (value/1).toFixed(2).replace('.', ',')
+      let val = (value / 1).toFixed(2).replace('.', ',')
       return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
     }
   }
@@ -107,4 +114,55 @@ export default {
 </script>
 
 <style>
+body {
+  padding: 0;
+  margin: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  right: 10px;
+  top: 10px;
+  width: 30px;
+  height: 30px;
+  background: rgba(0,0,0,.5);
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-popup {
+  position: relative;
+}
+
+.custom-popup .popup-ribbon {
+  background: #db0253;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.custom-popup img {
+  width: 100%;
+}
+
+.popup-content {
+  padding: 20px;
+}
+
+.popup-content h3 {
+  margin-top: 0;
+}
 </style>
