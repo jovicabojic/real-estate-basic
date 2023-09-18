@@ -1,7 +1,8 @@
 <template>
   <div>
     {{ publication.publicationTitle }}
-    <VueSlickCarousel>
+
+    <VueSlickCarousel v-bind="settings">
       <div v-for="(picture, index) in publication.pictures" :key="index">
         <img :src="picture.Url" alt="" />
       </div>
@@ -17,6 +18,15 @@ export default {
   props: {
     publication: {
       type: Object
+    }
+  },
+  data () {
+    return {
+      settings: {
+        arrows: false,
+        dots: true,
+        autoplay: true
+      }
     }
   },
   components: {
