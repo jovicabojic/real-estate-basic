@@ -1,57 +1,39 @@
 <template>
   <div id="app">
-    <l-map style="height: 800px; width: 1000px; margin: 0 auto;" :zoom="zoom" :center="center">
+    <l-map ref="map" style="height: 800px; width: 1000px; margin: 0 auto;" :zoom="zoom" :center="center">
       <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
-      <l-marker
-          v-for="publication in publications"
-          :key="publication.id"
-          :lat-lng="convertedCoordinates(publication)"
-      >
-        <l-icon ref="icon">
-          <img class="pin-icon" src="@/assets/logo.png" alt=""/>
-        </l-icon>
-        <l-popup>
-          <div>
-            {{ publication.publicationTitle }}
-            <VueSlickCarousel :arrows="true" :dots="true">
-              <div v-for="(picture, index) in publication.pictures" :key="index">
-                <img :src="picture.Url" alt="" />
-              </div>
-            </VueSlickCarousel>
-          </div>
-        </l-popup>
-      </l-marker>
+      <!-- l-popup will be handled in the JavaScript part -->
     </l-map>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import {LMap, LTileLayer, LMarker, LPopup, LIcon} from 'vue2-leaflet';
-import VueSlickCarousel from 'vue-slick-carousel'
+import {LMap, LTileLayer} from 'vue2-leaflet';
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import LocationPin from "@/assets/location.png";
 import 'vue-slick-carousel/dist/vue-slick-carousel.css'
 import 'vue-slick-carousel/dist/vue-slick-carousel-theme.css'
-import "leaflet";
-import "leaflet/dist/leaflet.css";
 
 export default {
   name: 'App',
   components: {
     LMap,
-    LTileLayer,
-    LMarker,
-    LPopup,
-    LIcon,
-    VueSlickCarousel
+    LTileLayer
   },
-  data () {
+  data() {
     return {
       publications: [],
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-      attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       zoom: 13,
-      center: [46.94809, 7.44744]
+      center: [46.94809, 7.44744],
+      carouselOptions: {
+        infinite: true,
+        slidesToShow: 1,
+        slidesToScroll: 1
+      },
     };
   },
   computed: {
@@ -59,50 +41,72 @@ export default {
     convertedCoordinates() {
       return (publication) => {
         if (publication.address && publication.address.coordinates) {
-          const { latitude, longitude } = publication.address.coordinates;
+          const {latitude, longitude} = publication.address.coordinates;
           return [latitude, longitude];
         }
-        return [0, 0]; // Default coordinates if not available
+        return [0, 0];
       };
     }
   },
   mounted() {
-    // Call the getPublications method to fetch data
     this.getPublications();
   },
   methods: {
     async getPublications() {
       try {
         const response = await axios.get('https://blattcodeservices.com/pct/search');
-        this.publications = response.data.publications; // Set the fetched data to the publications array
+        this.publications = response.data.publications;
+        // Create custom markers and bind popups on mouseover
+        this.createCustomMarkers();
       } catch (error) {
         console.error('Error fetching publications:', error);
       }
-    }
+    },
+    createCustomMarkers() {
+      this.publications.forEach((publication) => {
+        // Create a custom icon
+        const customIcon = L.icon({
+          iconUrl: LocationPin, // Update with the correct path to your icon
+          iconSize: [30, 30],
+        });
+
+        const marker = L.marker(this.convertedCoordinates(publication), {
+          icon: customIcon, // Assign the custom icon to the marker
+        });
+        marker.addTo(this.$refs.map.mapObject); // Add the marker to the map
+
+        // Bind popup on mouseover
+        marker.bindPopup(this.createPopupContent(publication), {
+          keepInView: true,
+          maxHeight: 300,
+          offset: [0, -10],
+        });
+
+        // Add mouseover and mouseout event listeners to show and hide the popup
+        marker.on("mouseover", () => {
+          marker.openPopup();
+        });
+
+        // marker.on("mouseout", () => {
+        //   marker.closePopup();
+        // });
+      });
+    },
+    createPopupContent(publication) {
+      return `
+        <div>${publication.publicationTitle}
+        <VueSlickCarousel :arrows="true" :dots="true">
+        ${this.createCarouselSlides(publication)}</VueSlickCarousel>
+        </template></div>`
+    },
+
+    createCarouselSlides(publication) {
+      return publication.pictures.map((picture) => `
+        <div>
+          <img src="${picture.Url}" alt="" />
+        </div>
+      `).join('');
+    },
   }
-}
+};
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-body {
-  padding: 0;
-  margin: 0;
-}
-
-img {
-  width: 100%;
-}
-
-.leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile {
-  width: 100%;
-}
-</style>
