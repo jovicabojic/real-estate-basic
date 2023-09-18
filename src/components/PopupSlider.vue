@@ -1,8 +1,7 @@
 <template>
-  <div>
-    {{ publication.publicationTitle }}
-
-    <VueSlickCarousel v-bind="settings">
+  <div v-if="publication">
+    <p>{{ publication && publication.publicationTitle }}</p>
+    <VueSlickCarousel :dots="true">
       <div v-for="(picture, index) in publication.pictures" :key="index">
         <img :src="picture.Url" alt="" />
       </div>
@@ -18,15 +17,6 @@ export default {
   props: {
     publication: {
       type: Object
-    }
-  },
-  data () {
-    return {
-      settings: {
-        arrows: false,
-        dots: true,
-        autoplay: true
-      }
     }
   },
   components: {
