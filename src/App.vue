@@ -133,6 +133,7 @@ body {
 
 .leaflet-popup-content-wrapper {
   padding: 0;
+  overflow: hidden;
 }
 
 .leaflet-container a.leaflet-popup-close-button {
